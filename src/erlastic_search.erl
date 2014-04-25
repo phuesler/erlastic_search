@@ -81,9 +81,7 @@ create_index(Params, Index) ->
 index_doc(Index, Type, Doc) ->
     index_doc(#erls_params{}, Index, Type, Doc).
 
--spec index_doc(record(erls_params), binary(), binary(), list() | binary()) -> {ok, list()} | {error, any()}.
-index_doc(Params, Index, Type, Doc) when is_list(Doc) ->
-    index_doc(Params, Index, Type, jsx:encode(Doc));
+-spec index_doc(record(erls_params), binary(), binary(), binary()) -> {ok, list()} | {error, any()}.
 index_doc(Params, Index, Type, Doc) when is_binary(Doc) ->
     erls_resource:post(Params, filename:join(Index, Type), [], [], Doc, Params#erls_params.http_client_options).
 
@@ -102,11 +100,13 @@ index_doc_with_id(Index, Type, Id, Doc) ->
 index_doc_with_id(Params, Index, Type, Id, Doc) ->
     index_doc_with_id_opts(Params, Index, Type, Id, Doc, []).
 
--spec index_doc_with_id_opts(record(erls_params), binary(), binary(), binary(), list() | binary(), list()) -> {ok, list()} | {error, any()}.
-index_doc_with_id_opts(Params, Index, Type, Id, Doc, Opts) when is_list(Doc), is_list(Opts) ->
-    index_doc_with_id_opts(Params, Index, Type, Id, jsx:encode(Doc), []);
-index_doc_with_id_opts(Params, Index, Type, Id, Doc, Opts) when is_binary(Doc), is_list(Opts) ->
-    erls_resource:post(Params, filename:join([Index, Type, Id]), [], Opts, Doc, Params#erls_params.http_client_options).
+-spec index_doc_with_id_opts(record(erls_params), binary(), binary(), binary(),
+                             binary(), list()) ->
+                                    {ok, list()} | {error, any()}.
+index_doc_with_id_opts(Params, Index, Type, Id, Doc, Opts)
+  when is_binary(Doc), is_list(Opts) ->
+    erls_resource:post(Params, filename:join([Index, Type, Id]), [],
+                       Opts, Doc, Params#erls_params.http_client_options).
 
 
 %%--------------------------------------------------------------------
@@ -122,33 +122,30 @@ upsert_doc(Index, Type, Id, Doc) ->
 upsert_doc(Params, Index, Type, Id, Doc) ->
     upsert_doc_opts(Params, Index, Type, Id, Doc, []).
 
--spec upsert_doc_opts(record(erls_params), binary(), binary(), binary(), list(), list()) -> {ok, list()} | {error, any()}.
-upsert_doc_opts(Params, Index, Type, Id, Doc, Opts) when is_list(Doc), is_list(Opts) ->
+-spec upsert_doc_opts(record(erls_params), binary(), binary(), binary(),
+                      list(), list()) -> {ok, list()} | {error, any()}.
+upsert_doc_opts(Params, Index, Type, Id, Doc, Opts)
+  when is_binary(Doc), is_list(Opts) ->
     erls_resource:post(Params, filename:join([Index, Type, Id, "_update"]), [], Opts,
-                       jsx:encode([{<<"doc">>, Doc}, {<<"doc_as_upsert">>, true}]),
+                       [<<"{\"doc\":">>, Doc, <<"\"doc_as_upsert\":true}">>]),
                        Params#erls_params.http_client_options).
 
 %% Documents is [ {Index, Type, Id, Json}, ... ]
--spec bulk_index_docs(record(erls_params), list()) -> {ok, list()} | {error, any()}.
+-spec bulk_index_docs(record(erls_params), list()) ->
+                             {ok, list()} | {error, any()}.
 bulk_index_docs(Params, IndexTypeIdJsonTuples) ->
     Body = lists:map(fun({Index, Type, Id, Doc}) when is_binary(Doc) ->
-                             Header = jsx:encode([
-                                                  {<<"index">>, [{[
-                                                                  {<<"_index">>, Index},
-                                                                  {<<"_type">>, Type},
-                                                                  {<<"_id">>, Id}
-                                                                  ]}]}]),
-                             [Header, <<"\n">>, Doc, <<"\n">>];
-                        ({Index, Type, Id, Doc}) when is_list(Doc) ->
-                             Header = jsx:encode([
-                                                 {<<"index">>, [
-                                                                 {<<"_index">>, Index},
-                                                                 {<<"_type">>, Type},
-                                                                 {<<"_id">>, Id}
-                                                                 ]}]),
-                             [Header, <<"\n">>, jsx:encode(Doc), <<"\n">>]
+                             Header = jiffy:encode({[
+                                                     {<<"index">>,
+                                                      {[
+                                                        {<<"_index">>, Index},
+                                                        {<<"_type">>, Type},
+                                                        {<<"_id">>, Id}
+                                                       ]}}]}),
+                             [Header, <<"\n">>, Doc, <<"\n">>]
                      end, IndexTypeIdJsonTuples),
-    erls_resource:post(Params, <<"/_bulk">>, [], [], iolist_to_binary(Body), Params#erls_params.http_client_options).
+    erls_resource:post(Params, <<"/_bulk">>, [], [], iolist_to_binary(Body),
+                       Params#erls_params.http_client_options).
 
 
 %%--------------------------------------------------------------------
@@ -173,9 +170,7 @@ search_limit(Index, Type, Query, Limit) when is_integer(Limit) ->
 
 -spec search(record(erls_params), list() | binary(), list() | binary(), list() | binary(), list()) -> {ok, list()} | {error, any()}.
 search(Params, Index, Type, Query, Opts) when is_binary(Query) ->
-    erls_resource:get(Params, filename:join([commas(Index), Type, <<"_search">>]), [], [{<<"q">>, Query}]++Opts, Params#erls_params.http_client_options);
-search(Params, Index, Type, Query, Opts) ->
-    erls_resource:post(Params, filename:join([commas(Index), Type, <<"_search">>]), [], Opts, jsx:encode(Query), Params#erls_params.http_client_options).
+    erls_resource:get(Params, filename:join([commas(Index), Type, <<"_search">>]), [], [{<<"q">>, Query}]++Opts, Params#erls_params.http_client_options).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -239,10 +234,12 @@ delete_doc_by_query_doc(Index, Type, Doc) ->
     delete_doc_by_query_doc(#erls_params{}, Index, Type, Doc).
 
 delete_doc_by_query_doc(Params, Index, any, Doc) ->
-    erls_resource:delete(Params, filename:join([Index, <<"_query">>]), [], [], jsx:encode(Doc), Params#erls_params.http_client_options);
+    erls_resource:delete(Params, filename:join([Index, <<"_query">>]), [], [],
+                         Doc, Params#erls_params.http_client_options);
 
 delete_doc_by_query_doc(Params, Index, Type, Doc) ->
-    erls_resource:delete(Params, filename:join([Index, Type, <<"_query">>]), [], [], jsx:encode(Doc), Params#erls_params.http_client_options).
+    erls_resource:delete(Params, filename:join([Index, Type, <<"_query">>]), [], [],
+                         Doc, Params#erls_params.http_client_options).
 
 optimize_index(Index) ->
     optimize_index(#erls_params{}, Index).
@@ -254,7 +251,7 @@ percolator_add(Index, Name, Query) ->
     percolator_add(#erls_params{}, Index, Name, Query).
 
 percolator_add(Params, Index, Name, Query) ->
-    erls_resource:put(Params, filename:join([<<"_percolator">>, commas(Index), Name]), [], [], jsx:encode(Query), Params#erls_params.http_client_options).
+    erls_resource:put(Params, filename:join([<<"_percolator">>, commas(Index), Name]), [], [], Query, Params#erls_params.http_client_options).
 
 percolator_del(Index, Name) ->
     percolator_del(#erls_params{}, Index, Name).
@@ -266,7 +263,7 @@ percolate(Index, Type, Doc) ->
     percolate(#erls_params{}, Index, Type, Doc).
 
 percolate(Params, Index, Type, Doc) ->
-    erls_resource:get(Params, filename:join([commas(Index), Type, <<"_percolate">>]), [], [], jsx:encode(Doc), Params#erls_params.http_client_options).
+    erls_resource:get(Params, filename:join([commas(Index), Type, <<"_percolate">>]), [], [], Doc, Params#erls_params.http_client_options).
 
 %%% Internal functions
 
