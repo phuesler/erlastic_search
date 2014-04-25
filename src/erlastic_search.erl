@@ -127,7 +127,7 @@ upsert_doc(Params, Index, Type, Id, Doc) ->
 upsert_doc_opts(Params, Index, Type, Id, Doc, Opts)
   when is_binary(Doc), is_list(Opts) ->
     erls_resource:post(Params, filename:join([Index, Type, Id, "_update"]), [], Opts,
-                       [<<"{\"doc\":">>, Doc, <<"\"doc_as_upsert\":true}">>]),
+                       [<<"{\"doc\":">>, Doc, <<"\"doc_as_upsert\":true}">>],
                        Params#erls_params.http_client_options).
 
 %% Documents is [ {Index, Type, Id, Json}, ... ]
