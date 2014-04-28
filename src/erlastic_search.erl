@@ -21,6 +21,7 @@
         ,bulk_index_docs/2
         ,search/2
         ,search/3
+        ,search/4
         ,search/5
         ,search_limit/4
         ,get_doc/3
@@ -162,7 +163,10 @@ search(Index, Query) ->
 search(Params, Index, Query) when is_record(Params, erls_params) ->
     search(Params, Index, <<>>, Query, []);
 search(Index, Type, Query) ->
-    search(#erls_params{}, Index, Type, Query, []). 
+    search(Index, Type, Query, []).
+
+search(Index, Type, Query, Opts) ->
+    search(#erls_params{}, Index, Type, Query, Opts).
 
 -spec search_limit(binary() | list(), binary(), list() | binary(), integer()) -> {ok, list()} | {error, any()}.
 search_limit(Index, Type, Query, Limit) when is_integer(Limit) ->
@@ -170,7 +174,9 @@ search_limit(Index, Type, Query, Limit) when is_integer(Limit) ->
 
 -spec search(record(erls_params), list() | binary(), list() | binary(), list() | binary(), list()) -> {ok, list()} | {error, any()}.
 search(Params, Index, Type, Query, Opts) when is_binary(Query) ->
-    erls_resource:get(Params, filename:join([commas(Index), Type, <<"_search">>]), [], [{<<"q">>, Query}]++Opts, Params#erls_params.http_client_options).
+    erls_resource:get(
+      Params, filename:join([commas(Index), Type, <<"_search">>]),
+      [], [{<<"q">>, Query}]++Opts, Params#erls_params.http_client_options).
 
 %%--------------------------------------------------------------------
 %% @doc
