@@ -108,7 +108,7 @@ put_mapping(Index, Type, Doc) ->
 
 -spec put_mapping(record(erls_params), binary(), binary(), list() | binary()) -> {ok, list()} | {error, any()}.
 put_mapping(Params, Index, Type, Doc) -> 
-    erls_resource:put(Params, filename:join([Index, Type, "_mapping"]), [], [], jsx:encode(Doc), Params#erls_params.http_client_options).
+    erls_resource:put(Params, filename:join([Index, Type, "_mapping"]), [], [], jiffy:encode(Doc), Params#erls_params.http_client_options).
 
 %%--------------------------------------------------------------------
 %% @doc
