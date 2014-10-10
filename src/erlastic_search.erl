@@ -10,6 +10,7 @@
 
 -export([create_index/1
         ,create_index/2
+        ,create_index/3
         ,stats_index/0
         ,stats_index/1
         ,stats_index/2
@@ -80,6 +81,19 @@ create_index(Params, Index) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Takes the name of an index and the record describing the servers
+%% details to create and sends the request to Elastic Search.
+%% The request uses the provided ejson as its body (used to specify
+%% index settings and/or mappings accoding to the Elastic Search
+%% create index API).
+%% @end
+%%--------------------------------------------------------------------
+-spec create_index(record(erls_params), binary(), tuple()) -> {ok, list()} | {error, any()}.
+create_index(Params, Index, Doc) ->
+    erls_resource:put(Params, Index, [], [], jiffy:encode(Doc), Params#erls_params.http_client_options).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Takes an optional list of index names and the record describing the servers
 %% details to read the stats for these index.
 %% If no index in supplied then stats for all indices are returned.
@@ -107,7 +121,7 @@ put_mapping(Index, Type, Doc) ->
     put_mapping(#erls_params{}, Index, Type, Doc).
 
 -spec put_mapping(record(erls_params), binary(), binary(), list() | binary()) -> {ok, list()} | {error, any()}.
-put_mapping(Params, Index, Type, Doc) -> 
+put_mapping(Params, Index, Type, Doc) ->
     erls_resource:put(Params, filename:join([Index, Type, "_mapping"]), [], [], jiffy:encode(Doc), Params#erls_params.http_client_options).
 
 %%--------------------------------------------------------------------
