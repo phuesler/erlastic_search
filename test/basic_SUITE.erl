@@ -36,16 +36,16 @@ end_per_group(index_access, _Config) ->
 index_id(Config) ->
     IndexName = ?config(index_name, Config),
     Id = create_random_name(<<"es_id_">>),
-    {ok, _} = erlastic_search:index_doc_with_id(IndexName, <<"type_1">>, Id, [{<<"hello">>, <<"there">>}]).
+    {ok, _} = erlastic_search:index_doc_with_id(IndexName, <<"type_1">>, Id, jiffy:encode({[{<<"hello">>, <<"there">>}]})).
 
 index_encoded_id(Config) ->
     IndexName = ?config(index_name, Config),
     Id = create_random_name(<<"es_id_">>),
-    {ok, _} = erlastic_search:index_doc_with_id(IndexName, <<"type_1">>, Id, jsx:encode([{<<"hello">>, <<"there">>}])).
+    {ok, _} = erlastic_search:index_doc_with_id(IndexName, <<"type_1">>, Id, jiffy:encode({[{<<"hello">>, <<"there">>}]})).
 
 index_no_id(Config) ->
     IndexName = ?config(index_name, Config),
-    {ok, _} = erlastic_search:index_doc(IndexName, <<"type_1">>, [{<<"hello">>, <<"there">>}]).
+    {ok, _} = erlastic_search:index_doc(IndexName, <<"type_1">>, jiffy:encode({[{<<"hello">>, <<"there">>}]})).
 
 search(Config) ->
     IndexName = ?config(index_name, Config),
@@ -55,13 +55,6 @@ search(Config) ->
 %%% Helper Functions
 %%%===================================================================
 
-compare_json(J1, J2) ->
-    sort(jsx:decode(J1)) == sort(jsx:decode(J2)).
-
-sort(L = [X | _]) when is_list(X) ->
-    [sort(Y) || Y <- L];
-sort(L = [X | _]) when is_tuple(X)->
-    lists:keysort(1, L).
 
 create_random_name(Name) ->
     random:seed(erlang:now()),
