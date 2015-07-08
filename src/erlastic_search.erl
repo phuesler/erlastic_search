@@ -159,7 +159,7 @@ index_doc_with_id(Params, Index, Type, Id, Doc) ->
                                     {ok, list()} | {error, any()}.
 index_doc_with_id_opts(Params, Index, Type, Id, Doc, Opts)
   when is_binary(Doc), is_list(Opts) ->
-    erls_resource:post(Params, filename:join([Index, Type, Id]), [],
+    erls_resource:put(Params, filename:join([Index, Type, Id]), [],
                        Opts, Doc, Params#erls_params.http_client_options).
 
 
