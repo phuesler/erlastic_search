@@ -1,0 +1,5 @@
+# CHANGELOG
+
+## 1.0.0
+
+* Set the content-type to application/json to make newer versions of ES happy
